@@ -14,13 +14,11 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 import com.thed.service.soap.wsdl.RemoteCriteria;
-import com.thed.service.soap.wsdl.RemoteCustomField;
-import com.thed.service.soap.wsdl.RemoteCustomizableEntity.CustomProperties;
-import com.thed.service.soap.wsdl.RemoteCustomizableEntity.CustomProperties.Entry;
 import com.thed.service.soap.wsdl.RemoteFieldValue;
 import com.thed.service.soap.wsdl.RemoteReleaseTestSchedule;
 import com.thed.service.soap.wsdl.RemoteRepositoryTree;
 import com.thed.service.soap.wsdl.RemoteRepositoryTreeTestcase;
+import com.thed.service.soap.wsdl.RemoteRequirement;
 import com.thed.service.soap.wsdl.RemoteTestResult;
 import com.thed.service.soap.wsdl.RemoteTestcase;
 import com.thed.service.soap.wsdl.SearchOperation;
@@ -37,7 +35,8 @@ public class ZephyrUtil {
 	public static String token = new String(); 
 	static String tcReleaseId = "5"; 
 	static String tcPhaseFolder = "DevZone"; 
-
+	public static RemoteFieldValue fieldValue = new RemoteFieldValue();
+	public static List<RemoteFieldValue> values = new ArrayList<RemoteFieldValue>();
 	public static List<RemoteCriteria> rcList = new ArrayList<RemoteCriteria>(); 
 	public static RemoteCriteria remoteCriteria = new RemoteCriteria(); 
 	public static RemoteCriteria remoteCriteria2 = new RemoteCriteria(); 
@@ -75,20 +74,14 @@ public class ZephyrUtil {
 	public static void main(String[] args){ 
 		try {
 			loginProcess();
-			//updateTestResult(1L);
-			retrieveCustomFieldsTestCase(4747L);
+			//updateTestResult(1L, "TC21956");
+			updateTestRequirement("TC53107");
 			logoutProcess(); 
 		} catch (ZephyrServiceException e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
 		} 
 		
-	}
-	
-	private static void getCustomFieldsValue() throws ZephyrServiceException 
-	{
-		List<RemoteCustomField> customFields = client.getCustomFields("testcase", token);
-		System.out.println(customFields.get(0).getFieldName());
 	}
 	
 	private static String getTestSchedulesByCriteria(String testcaseId) throws ZephyrServiceException {
@@ -101,22 +94,25 @@ public class ZephyrUtil {
 		return Long.toString(releaseTestSchedule.getTestScheduleId());
 	}
 	
-	public static void retrieveCustomFieldsTestCase(long testcaseId) throws ZephyrServiceException {
-		RemoteRepositoryTreeTestcase testCase = client.getTestcaseById(testcaseId, token);
-		CustomProperties props = testCase.getTestcase().getCustomProperties();
-		if(null != props) {
-			List<Entry> list = props.getEntry();
-			if(null != list && !list.isEmpty()) {
-				for(int i =0; i<list.size(); i++) {
-					Entry entry = list.get(i);
-					System.out.println(entry.getKey() +"\t" + entry.getValue());
-				}
-			}
+	private static RemoteRepositoryTreeTestcase getTestCaseCriteria(String rallyId) throws ZephyrServiceException {
+		remoteCriteria.setSearchName("testcase.externalId"); 
+		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
+		remoteCriteria.setSearchValue(rallyId); 
+		rcList.add(remoteCriteria);
+		List<RemoteRepositoryTreeTestcase> testcaseObj = client.getTestcasesByCriteria(rcList, false, token);
+		if(null != testcaseObj && !testcaseObj.isEmpty()) {
+			return testcaseObj.get(0);
+		} else {
+			return null;
 		}
-		
 	}
 	
-	private static void updateTestResult(long userId) throws ZephyrServiceException {
+	public static void retrieveCustomFieldsTestCase(long testcaseId) throws ZephyrServiceException {
+		RemoteRepositoryTreeTestcase testCase = client.getTestcaseById(testcaseId, token);
+		System.out.println(testCase.getTestcase().getExternalId());
+	}
+	
+	private static void updateTestResult(long userId, String testcaseId) throws ZephyrServiceException {
 		RemoteTestResult result = new RemoteTestResult();
 		GregorianCalendar c = new GregorianCalendar();
 		c.setTime(new Date());
@@ -126,14 +122,31 @@ public class ZephyrUtil {
 		} catch (DatatypeConfigurationException e) {
 			e.printStackTrace();
 		}
-		result.setExecutionDate(date2);
-		result.setId(4747L);
-		result.setTesterId(userId);
-		result.setExecutionStatus("1");
-		result.setReleaseTestScheduleId(getTestSchedulesByCriteria("4747"));
-		List<RemoteTestResult> list = new ArrayList<RemoteTestResult>();
-		list.add(result);
-		client.updateTestStatus(list, token);
+		RemoteRepositoryTreeTestcase testCase = getTestCaseCriteria(testcaseId);
+		if(null != testCase) {
+			RemoteTestcase remoteTestcase = testCase.getTestcase();
+			result.setExecutionDate(date2);
+			result.setId(remoteTestcase.getId());
+			result.setTesterId(userId);
+			result.setExecutionStatus("1");
+			result.setReleaseTestScheduleId(getTestSchedulesByCriteria(remoteTestcase.getId().toString()));
+			List<RemoteTestResult> list = new ArrayList<RemoteTestResult>();
+			list.add(result);
+			client.updateTestStatus(list, token);
+		}
+	}
+	
+	private static void updateTestRequirement(String testcaseId) throws ZephyrServiceException {
+		RemoteRepositoryTreeTestcase testCase = getTestCaseCriteria(testcaseId);
+		if(null != testCase) {
+			RemoteRequirement requirement = client.getRequirementById(77L, token);
+			List<Long> testCases = requirement.getTestcaseIds();
+			testCases.add(testCase.getId());
+			fieldValue.setKey("testcases");
+			fieldValue.setValue((java.util.ArrayList<java.lang.Long>)testCases);
+			values.add(fieldValue);
+			client.updateRequirement(77L, values, token);
+		}
 	}
 	
 	/* 
