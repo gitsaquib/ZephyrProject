@@ -22,7 +22,7 @@ public class ZephyrMain {
 			Configuration configuration = util.readConfigFile();
 			System.out.println("Start time:"+new Date());
 			util.loginProcess(configuration.getUrl(), configuration.getUsername(), configuration.getPassword());
-			userId = util.retrieveUserId("mohammed.saquib@pearson.com");
+			userId = util.retrieveUserId("godwin.terence@pearson.com");
 			updateResultsInZephyr();
 			System.out.println("End time:"+new Date());
 			util.logoutProcess(); 

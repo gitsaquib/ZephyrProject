@@ -150,7 +150,7 @@ public class ZephyrUtil {
 					result.setId(remoteTestcase.getId());
 					result.setTesterId(userId);
 					result.setExecutionStatus(testResult.getStatus());
-					String schId = getTestSchedulesByCriteria(remoteTestcase.getId().toString());
+					String schId = "6970";// getTestSchedulesByCriteria(remoteTestcase.getId().toString());
 					if(null != schId) {
 						result.setReleaseTestScheduleId(schId);
 						list.add(result);	
