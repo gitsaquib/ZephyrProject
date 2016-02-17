@@ -22,7 +22,7 @@ public class ZephyrMain {
 			Configuration configuration = util.readConfigFile();
 			System.out.println("Start time:"+new Date());
 			util.loginProcess(configuration.getUrl(), configuration.getUsername(), configuration.getPassword());
-			userId = util.retrieveUserId("godwin.terence@pearson.com");
+			userId = util.retrieveUserId("mohammed.saquib@pearson.com");
 			updateResultsInZephyr();
 			System.out.println("End time:"+new Date());
 			util.logoutProcess(); 
@@ -66,7 +66,7 @@ public class ZephyrMain {
 	        		System.exit(0);
 	        	}
         		String status = "1";
-        		if(null != details[1] && details[1].equalsIgnoreCase("Fal")) {
+        		if(null != details[1] && details[1].equalsIgnoreCase("Fail")) {
         			status = "2";
         		}
         		if(null != details[1] && details[1].equalsIgnoreCase("Blocked")) {

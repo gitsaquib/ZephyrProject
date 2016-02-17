@@ -73,7 +73,7 @@ public class ZephyrUtil {
 		System.out.println("\n" + "This session has ended."); 
 	} 
 	
-	private String getTestSchedulesByCriteria(String testcaseId) {
+	public String getTestSchedulesByCriteria(String testcaseId) {
 		remoteCriteria.setSearchName("tcrTreeTestcase.testcase.id"); 
 		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
 		remoteCriteria.setSearchValue(testcaseId); 
@@ -88,6 +88,39 @@ public class ZephyrUtil {
 		}
 	}
 	
+	public String getTestSchedulesByCriteria(String id, String type){
+		if(type.equalsIgnoreCase("Zephyr")) {
+			remoteCriteria.setSearchName("testcase.id"); 
+		} else {
+			remoteCriteria.setSearchName("testcase.externalId");
+		}
+		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
+		remoteCriteria.setSearchValue(id); 
+		rcList.add(remoteCriteria);
+		List<RemoteRepositoryTreeTestcase> remoteRepositoryTreeTestcases;
+		try {
+			remoteRepositoryTreeTestcases = client.getTestcasesByCriteria(rcList, false, token);
+			if(null != remoteRepositoryTreeTestcases && !remoteRepositoryTreeTestcases.isEmpty()) {
+				long remoteTestCaseId = 0;
+				for (RemoteRepositoryTreeTestcase remoteRepositoryTreeTestcase:remoteRepositoryTreeTestcases) {
+					if(remoteTestCaseId < remoteRepositoryTreeTestcase.getRemoteRepositoryId()) {
+						remoteTestCaseId = remoteRepositoryTreeTestcase.getRemoteRepositoryId();
+					}
+				}
+				remoteCriteria.setSearchName("tcrTreeTestcase.testcase.id");
+				remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
+				remoteCriteria.setSearchValue(Long.toString(remoteTestCaseId)); 
+				rcList.add(remoteCriteria);
+				List<RemoteReleaseTestSchedule> releaseTestSchedules = client.getTestSchedulesByCriteria(rcList, false, token);
+				RemoteReleaseTestSchedule releaseTestSchedule = releaseTestSchedules.get(releaseTestSchedules.size()-1);
+				return Long.toString(releaseTestSchedule.getTestScheduleId());
+			}
+		} catch (Exception e) {
+			System.out.println("Error for "+id+"\t"+type);
+		}
+		return null;
+	}
+		
 	private RemoteRepositoryTreeTestcase getTestCaseCriteria(String rallyId){
 		remoteCriteria.setSearchName("testcase.externalId"); 
 		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
@@ -150,7 +183,7 @@ public class ZephyrUtil {
 					result.setId(remoteTestcase.getId());
 					result.setTesterId(userId);
 					result.setExecutionStatus(testResult.getStatus());
-					String schId = "6970";// getTestSchedulesByCriteria(remoteTestcase.getId().toString());
+					String schId = getTestSchedulesByCriteria(testResult.getTestCaseId(), testResult.getToolType());
 					if(null != schId) {
 						result.setReleaseTestScheduleId(schId);
 						list.add(result);	
