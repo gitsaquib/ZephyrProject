@@ -172,8 +172,9 @@ public class ZephyrUtil {
 			e.printStackTrace();
 		}
 		List<RemoteTestResult> list = new ArrayList<RemoteTestResult>();
+		int index = 1;
 		for(TestResult testResult:testResults) {
-			System.out.println(testResult.getTestCaseId()+" - "+testResult.getToolType());
+			System.out.println(index+"\t"+testResult.getTestCaseId()+" - "+testResult.getToolType());
 			if(testResult.getToolType().equalsIgnoreCase("Rally")) {
 				RemoteRepositoryTreeTestcase testCase = getTestCaseCriteria(testResult.getTestCaseId());
 				if(null != testCase) {
@@ -201,6 +202,7 @@ public class ZephyrUtil {
 					list.add(result);	
 				}
 			}
+			index++;
 		}
 		if(list.size() > 0) {
 			client.updateTestStatus(list, token);

@@ -17,6 +17,7 @@ import javax.xml.namespace.QName;
 import org.apache.cxf.wsdl.http.UrlEncoded;
 
 import com.thed.service.soap.wsdl.RemoteCriteria;
+import com.thed.service.soap.wsdl.RemoteFieldValue;
 import com.thed.service.soap.wsdl.RemoteRepositoryTreeTestcase;
 import com.thed.service.soap.wsdl.RemoteTestcase;
 import com.thed.service.soap.wsdl.SearchOperation;
@@ -39,17 +40,23 @@ public class SampleClass {
 			System.out.println("Start time:"+new Date());
 			util.loginProcess("http://pearson.yourzephyr.com/flex/services/soap/zephyrsoapservice-v1?wsdl", 
 					"vsaqumo", "shaad@10");
-			RemoteRepositoryTreeTestcase remoteRepositoryTreeTestcase = util.getTestCaseCriteria("TC43861");
-        	if(null != remoteRepositoryTreeTestcase) {
-	    		RemoteTestcase  remoteTestcase = remoteRepositoryTreeTestcase.getTestcase();
-	    		System.out.println(remoteTestcase.getId());
-        	}
+			util.updateTag(169L);
 			System.out.println("End time:"+new Date());
 			util.logoutProcess(); 
 		} catch (Exception e) {
 			System.out.println("1. "+e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	private void updateTag(long id) throws ZephyrServiceException {
+		List<RemoteFieldValue> fieldValues = new ArrayList<>();
+		RemoteFieldValue fieldValue = new RemoteFieldValue();
+		fieldValue.setKey("tags");
+		String tags[] = "Port_2_Xamrin, Automation, sprint1-6-4, teachermode, TCfrom1.5, 212iOS".split(",");
+		fieldValue.setValue(tags);
+		fieldValues.add(fieldValue);
+		client.updateTestcase(id, fieldValues, token);
 	}
 	
 	private void retriveTestCases() throws FileNotFoundException, ZephyrServiceException {
