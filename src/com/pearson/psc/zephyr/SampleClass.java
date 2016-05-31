@@ -6,15 +6,12 @@ import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
 import javax.xml.namespace.QName;
-
-import org.apache.cxf.wsdl.http.UrlEncoded;
 
 import com.thed.service.soap.wsdl.RemoteCriteria;
 import com.thed.service.soap.wsdl.RemoteFieldValue;
@@ -40,7 +37,9 @@ public class SampleClass {
 			System.out.println("Start time:"+new Date());
 			util.loginProcess("http://pearson.yourzephyr.com/flex/services/soap/zephyrsoapservice-v1?wsdl", 
 					"vsaqumo", "shaad@10");
-			util.updateTag(169L);
+			RemoteRepositoryTreeTestcase remoteRepositoryTreeTestcase = util.getTestCaseCriteriaById("70716");
+			RemoteTestcase remoteTestcase = remoteRepositoryTreeTestcase.getTestcase();
+			System.out.println(remoteTestcase.getName());
 			System.out.println("End time:"+new Date());
 			util.logoutProcess(); 
 		} catch (Exception e) {
@@ -49,11 +48,58 @@ public class SampleClass {
 		}
 	}
 	
-	private void updateTag(long id) throws ZephyrServiceException {
+	private void updateTagForTestCases() {
+		File inFolder = new File(rootFolder+File.separator+"in"+File.separator);
+    	FilenameFilter fileNameFilter = new FilenameFilter() {
+ 		   
+            @Override
+            public boolean accept(File dir, String name) {
+               if(name.lastIndexOf('.')>0)
+               {
+                  int lastIndex = name.lastIndexOf('.');
+                  String str = name.substring(lastIndex);
+                  if(str.equals(".txt"))
+                  {
+                     return true;
+                  }
+               }
+               return false;
+            }
+        };
+    	File files[] = inFolder.listFiles(fileNameFilter);
+    	for(File file:files) {
+    		Scanner sc;
+			try {
+				sc = new Scanner(new FileReader(file));
+				while (sc.hasNextLine()){
+		        	String testCaseDetails[] = sc.nextLine().split("\t");
+					updateTag(Long.parseLong(testCaseDetails[0]), testCaseDetails[1]);
+		        }
+		        sc.close();
+		        file.renameTo(new File(file.getAbsolutePath().replace("txt", "done")));
+			} catch (FileNotFoundException e1) {
+				System.out.println(e1.getMessage());
+				e1.printStackTrace();
+			} catch (NumberFormatException | ZephyrServiceException e) {
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+			}
+    	}
+	}
+	
+	private void updateTag(long id, String tags) throws ZephyrServiceException {
 		List<RemoteFieldValue> fieldValues = new ArrayList<>();
 		RemoteFieldValue fieldValue = new RemoteFieldValue();
-		fieldValue.setKey("tags");
-		String tags[] = "Port_2_Xamrin, Automation, sprint1-6-4, teachermode, TCfrom1.5, 212iOS".split(",");
+		fieldValue.setKey("tag");
+		String tagsArray[] = tags.split(",");
+		String tagStr = "";
+		for(String tag:tagsArray) {
+			if(tagStr.isEmpty()) {
+				tagStr = tag.trim();
+			} else {
+				tagStr = tagStr + " " + tag.trim();
+			}
+		}
 		fieldValue.setValue(tags);
 		fieldValues.add(fieldValue);
 		client.updateTestcase(id, fieldValues, token);
@@ -102,6 +148,24 @@ public class SampleClass {
 		remoteCriteria.setSearchName("testcase.externalId"); 
 		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
 		remoteCriteria.setSearchValue(altId); 
+		rcList.add(remoteCriteria);
+		List<RemoteRepositoryTreeTestcase> testcaseObj;
+		try {
+			testcaseObj = client.getTestcasesByCriteria(rcList, false, token);
+			if(null != testcaseObj && !testcaseObj.isEmpty()) {
+				return testcaseObj.get(0);
+			} else {
+				return null;
+			}
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	private RemoteRepositoryTreeTestcase getTestCaseCriteriaById(String id){
+		remoteCriteria.setSearchName("testcase.id"); 
+		remoteCriteria.setSearchOperation(SearchOperation.EQUALS); 
+		remoteCriteria.setSearchValue(id); 
 		rcList.add(remoteCriteria);
 		List<RemoteRepositoryTreeTestcase> testcaseObj;
 		try {
